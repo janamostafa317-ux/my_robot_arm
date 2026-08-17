@@ -1,0 +1,52 @@
+import rclpy
+from rclpy.node import Node
+from trajectory_msgs.msg import JointTrajectory
+import math
+
+# ملاحظة: تم التعليق على مكتبة serial لتفادي الأخطاء في حال عدم التثبيت
+# يمكنك إلغاء التعليق عند ربط الأردوينو فعلياً: import serial
+
+class SerialBridge(Node):
+    def __init__(self):
+        super().__init__('serial_bridge')
+        
+        # الاشتراك في التوبيك
+        self.subscription = self.create_subscription(
+            JointTrajectory,
+            '/arm_controller/joint_trajectory',
+            self.trajectory_callback,
+            10
+        )
+        self.get_logger().info('Serial Bridge Node started successfully!')
+
+    def trajectory_callback(self, msg):
+        if not msg.points:
+            return
+        
+        # أخذ آخر نقطة في المسار
+        latest_point = msg.points[-1]
+        
+        # تحويل الزوايا من Radians إلى Degrees وتحديدها بين 0 و 180 درجة
+        degrees = []
+        for rad in latest_point.positions:
+            deg = int(math.degrees(rad))
+            deg_clamped = max(0, min(180, deg))
+            degrees.append(deg_clamped)
+        
+        # إضافة الزاوية الخامسة للجريبر (افتراضياً 0)
+        if len(degrees) < 5:
+            degrees.append(0)
+            
+        # تجهيز الرسالة بالشكل: angle1,angle2,angle3,angle4,angle5\n
+        payload = ",".join(map(str, degrees)) + "\n"
+        self.get_logger().info(f'Formatted Serial Data: {payload.strip()}')
+
+def main(args=None):
+    rclpy.init(args=args)
+    node = SerialBridge()
+    rclpy.spin(node)
+    node.destroy_node()
+    rclpy.shutdown()
+
+if __name__ == '__main__':
+    main()

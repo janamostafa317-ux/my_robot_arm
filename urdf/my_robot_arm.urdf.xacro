@@ -1,0 +1,169 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="my_robot_arm">
+
+  <!-- Dummy root link to fix KDL inertia warning -->
+  <link name="world"/>
+
+  <joint name="world_fixed" type="fixed">
+    <parent link="world"/>
+    <child link="base_link"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+  </joint>
+
+  <!-- Base Link (Height: 0.071 m = 7.1 cm) -->
+  <link name="base_link">
+    <visual>
+      <origin xyz="0 0 0.0355" rpy="0 0 0"/>
+      <geometry>
+        <cylinder radius="0.05" length="0.071"/>
+      </geometry>
+      <material name="blue">
+        <color rgba="0 0 0.8 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0.0355" rpy="0 0 0"/>
+      <geometry>
+        <cylinder radius="0.05" length="0.071"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="0.5"/>
+      <origin xyz="0 0 0.0355" rpy="0 0 0"/>
+      <inertia ixx="0.001" ixy="0" ixz="0" iyy="0.001" iyz="0" izz="0.001"/>
+    </inertial>
+  </link>
+
+  <!-- Joint 1: Base to L1 (Revolute - Base Rotation) -->
+  <joint name="joint1" type="revolute">
+    <parent link="base_link"/>
+    <child link="L1"/>
+    <origin xyz="0 0 0.071" rpy="0 0 0"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="-3.14" upper="3.14" effort="10.0" velocity="1.0"/>
+  </joint>
+
+  <!-- L1 Link (Height: 0.10 m = 10 cm) -->
+  <link name="L1">
+    <visual>
+      <origin xyz="0 0 0.05" rpy="0 0 0"/>
+      <geometry>
+        <cylinder radius="0.03" length="0.10"/>
+      </geometry>
+      <material name="grey">
+        <color rgba="0.5 0.5 0.5 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0.05" rpy="0 0 0"/>
+      <geometry>
+        <cylinder radius="0.03" length="0.10"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="0.3"/>
+      <origin xyz="0 0 0.05" rpy="0 0 0"/>
+      <inertia ixx="0.0005" ixy="0" ixz="0" iyy="0.0005" iyz="0" izz="0.0005"/>
+    </inertial>
+  </link>
+
+  <!-- Joint 2: L1 to L2 (Revolute) -->
+  <joint name="joint2" type="revolute">
+    <parent link="L1"/>
+    <child link="L2"/>
+    <origin xyz="0 0 0.10" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="-1.57" upper="1.57" effort="10.0" velocity="1.0"/>
+  </joint>
+
+  <!-- L2 Link (Length: 0.128 m = 12.8 cm) -->
+  <link name="L2">
+    <visual>
+      <origin xyz="0 0 0.064" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.04 0.04 0.128"/>
+      </geometry>
+      <material name="red">
+        <color rgba="0.8 0 0 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0.064" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.04 0.04 0.128"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="0.25"/>
+      <origin xyz="0 0 0.064" rpy="0 0 0"/>
+      <inertia ixx="0.0004" ixy="0" ixz="0" iyy="0.0004" iyz="0" izz="0.0004"/>
+    </inertial>
+  </link>
+
+  <!-- Joint 3: L2 to L3 (Revolute) -->
+  <joint name="joint3" type="revolute">
+    <parent link="L2"/>
+    <child link="L3"/>
+    <origin xyz="0 0 0.128" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="-1.57" upper="1.57" effort="10.0" velocity="1.0"/>
+  </joint>
+
+  <!-- L3 Link (Length: 0.07 m = 7 cm) -->
+  <link name="L3">
+    <visual>
+      <origin xyz="0 0 0.035" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.035 0.035 0.07"/>
+      </geometry>
+      <material name="green">
+        <color rgba="0 0.8 0 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0.035" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.035 0.035 0.07"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="0.2"/>
+      <origin xyz="0 0 0.035" rpy="0 0 0"/>
+      <inertia ixx="0.0002" ixy="0" ixz="0" iyy="0.0002" iyz="0" izz="0.0002"/>
+    </inertial>
+  </link>
+
+  <!-- Joint 4: L3 to End Effector / Gripper (Revolute) -->
+  <joint name="joint4" type="revolute">
+    <parent link="L3"/>
+    <child link="end_effector"/>
+    <origin xyz="0 0 0.07" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="-1.57" upper="1.57" effort="10.0" velocity="1.0"/>
+  </joint>
+
+  <!-- End Effector Link (Length: 0.11 m = 11 cm) -->
+  <link name="end_effector">
+    <visual>
+      <origin xyz="0 0 0.055" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.02 0.05 0.11"/>
+      </geometry>
+      <material name="yellow">
+        <color rgba="0.8 0.8 0 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0.055" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.02 0.05 0.11"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="0.15"/>
+      <origin xyz="0 0 0.055" rpy="0 0 0"/>
+      <inertia ixx="0.0001" ixy="0" ixz="0" iyy="0.0001" iyz="0" izz="0.0001"/>
+    </inertial>
+  </link>
+
+</robot>
