@@ -1,52 +1,68 @@
+#!/usr/bin/env python3
+
 import rclpy
 from rclpy.node import Node
-from trajectory_msgs.msg import JointTrajectory
-import math
-
-# ملاحظة: تم التعليق على مكتبة serial لتفادي الأخطاء في حال عدم التثبيت
-# يمكنك إلغاء التعليق عند ربط الأردوينو فعلياً: import serial
+from std_msgs.msg import String
+import serial
+import time
 
 class SerialBridge(Node):
     def __init__(self):
         super().__init__('serial_bridge')
+
+        self.port = '/dev/ttyACM0'
+        self.baudrate = 115200
+        self.serial_conn = None
         
-        # الاشتراك في التوبيك
+        self.connect_arduino()
+
         self.subscription = self.create_subscription(
-            JointTrajectory,
-            '/arm_controller/joint_trajectory',
-            self.trajectory_callback,
+            String,
+            'robot_command',
+            self.command_callback,
             10
         )
-        self.get_logger().info('Serial Bridge Node started successfully!')
 
-    def trajectory_callback(self, msg):
-        if not msg.points:
-            return
+    def connect_arduino(self):
+        try:
+            self.serial_conn = serial.Serial(self.port, self.baudrate, timeout=1)
+            time.sleep(2)
+            self.get_logger().info(f'Connected to Arduino on {self.port}')
+        except Exception as e:
+            self.get_logger().error(f'Failed to connect to Arduino: {e}')
+            self.serial_conn = None
+
+    def command_callback(self, msg):
+        command = msg.data + '\n'
         
-        # أخذ آخر نقطة في المسار
-        latest_point = msg.points[-1]
-        
-        # تحويل الزوايا من Radians إلى Degrees وتحديدها بين 0 و 180 درجة
-        degrees = []
-        for rad in latest_point.positions:
-            deg = int(math.degrees(rad))
-            deg_clamped = max(0, min(180, deg))
-            degrees.append(deg_clamped)
-        
-        # إضافة الزاوية الخامسة للجريبر (افتراضياً 0)
-        if len(degrees) < 5:
-            degrees.append(0)
-            
-        # تجهيز الرسالة بالشكل: angle1,angle2,angle3,angle4,angle5\n
-        payload = ",".join(map(str, degrees)) + "\n"
-        self.get_logger().info(f'Formatted Serial Data: {payload.strip()}')
+        # التأكد من الاتصال، وإعادة المحاولة إذا انقطع
+        if self.serial_conn is None or not self.serial_conn.is_open:
+            self.get_logger().warn('Connection lost. Reconnecting...')
+            self.connect_arduino()
+
+        if self.serial_conn and self.serial_conn.is_open:
+            try:
+                self.serial_conn.write(command.encode('utf-8'))
+                self.get_logger().info(f'Sent to Arduino: {msg.data}')
+            except Exception as e:
+                self.get_logger().error(f'Error writing to serial: {e}')
+        else:
+            self.get_logger().warn('Serial connection is not active.')
 
 def main(args=None):
     rclpy.init(args=args)
     node = SerialBridge()
-    rclpy.spin(node)
-    node.destroy_node()
-    rclpy.shutdown()
+    try:
+        rclpy.spin(node)
+    except KeyboardInterrupt:
+        pass
+    finally:
+        if node.serial_conn and node.serial_conn.is_open:
+            node.serial_conn.close()
+        # تم إزالة rclpy.shutdown الزائدة لمنع خطأ الـ RCLError
+        node.destroy_node()
+        if rclpy.ok():
+            rclpy.shutdown()
 
 if __name__ == '__main__':
     main()
